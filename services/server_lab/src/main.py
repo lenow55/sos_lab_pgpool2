@@ -1,79 +1,45 @@
-from typing import List
 from fastapi import FastAPI
-from pydantic import BaseModel
-from datetime import datetime
-from fastapi.exceptions import HTTPException
-from fastapi.responses import PlainTextResponse
-import uuid
 
-app = FastAPI(description="Effective PP2", version="0.0.1")
+from tortoise import Tortoise
+
+from src.env import get_debug, get_root
+
+from src.database.register import register_tortoise
+from src.database.config import TORTOISE_ORM
+
+#from src.routes import base_config
+
+Tortoise.init_models(["src.database.models"], "models")
+
+app = FastAPI(
+        description="Effective PP2",
+        version="0.0.2",
+        root_path=get_root())
+
+#app.include_router(base_config.router)
+
+@app.get("/")
+def test():
+    return "TEST"
+
+register_tortoise(app, config=TORTOISE_ORM, generate_schemas=False)
 
 
-class BaseConfig(BaseModel):
-    id: uuid.UUID = uuid.uuid4()
-    count_connections: int = 0
-    read_write_percent: int = 0
-    query_complex: int = 0
-    base_in_cache: bool = False
-    query_cache: bool = False
-    pgpool_enabled: bool = False
-    create_date: datetime = datetime.now()
-    updated_date: datetime = datetime.now()
-
-class BaseConfigDTO(BaseModel):
-    count_connections: int = 0
-    read_write_percent: int = 0
-    query_complex: int = 0
-    base_in_cache: bool = False
-    query_cache: bool = False
-    pgpool_enabled: bool = False
-
-@app.post(
-    "/config",
-    tags=["BaseConfigDTO"],
-    description="Отправить конфигурацию на предсказание",
-    response_model=BaseConfig,
+debug = get_debug()
+print(debug)
+if debug == True:
+    from tortoise.log import logger, db_client_logger
+    import logging
+    import sys
+    print("DEBUG MODE")
+    fmt = logging.Formatter(
+        fmt="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-async def create_config(config: BaseConfigDTO) -> BaseConfig:
-    return BaseConfig()
-
-
-@app.get(
-    "/config/{config_id}",
-    tags=["BaseConfig"],
-    description="Получить конфигурацию по id",
-    response_model=BaseConfig,
-    )
-async def read_config(config_id: uuid.UUID) -> BaseConfig:
-    return BaseConfig(id=config_id)
-
-@app.patch(
-    "/config/{config_id}",
-    tags=["BaseConfigDTO"],
-    description="Получить конфигурацию по id",
-    response_model=BaseConfig,
-    )
-async def update_config(
-        config_id: uuid.UUID,
-        config: BaseConfigDTO
-    ) -> BaseConfig:
-    return BaseConfig(id=config_id)
-
-@app.get(
-    "/configs",
-    tags=["BaseConfigList"],
-    description="Получить список конфигураций",
-    response_model=List[BaseConfig],
-    )
-async def read_configs() -> List[BaseConfig]:
-    return [BaseConfig()]
-
-@app.delete(
-    "/config/{config_id}",
-    response_class=PlainTextResponse,
-)
-async def delete_config(
-    config_id: uuid.UUID
-) -> PlainTextResponse:
-    return PlainTextResponse(content=f"id {config_id}")
-
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setLevel(logging.DEBUG)
+    sh.setFormatter(fmt)
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(sh)
+    db_client_logger.setLevel(logging.DEBUG)
+    db_client_logger.addHandler(sh)

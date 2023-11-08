@@ -1,0 +1,25 @@
+FROM python:3.11-buster as builder
+
+RUN mkdir app
+WORKDIR /app
+
+ENV PATH="${PATH}:/root/.local/bin"
+ENV PYTHONPATH=.
+
+COPY poetry.lock pyproject.toml ./
+RUN pip install --no-cache-dir poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --without dev --no-interaction --no-ansi \
+    && rm -rf $(poetry config cache-dir)/{cache,artifacts}
+
+FROM python:3.11-buster
+# set environment variables
+ENV PATH="${PATH}:/root/.local/bin"
+ENV PYTHONPATH=.
+
+COPY --from=builder /app /app
+
+# for migrations
+#COPY migrations/ ./migrations
+
+COPY src/ ./src

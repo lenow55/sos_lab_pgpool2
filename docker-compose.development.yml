@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  server_lab:
+    build:
+      context: ./services/server_lab
+      dockerfile: Dockerfile.Dev
+    volumes:
+      - ./services/server_lab/src:/app/src
+    command: uvicorn src.main:app --reload --host 0.0.0.0 --port 5001
+    ports:
+      - 5001:5001
+    environment:
+      BASE_URL: http://localhost:8090
+      ROOT_PATH: /
+        #DEBUG: False
+      DB_NAME: fastapi_serv_db_debug
+
+        #  client:
+        #    build:
+        #      context: ./services/client
+        #      dockerfile: Dockerfile.Dev
+        #    stdin_open: true
+        #    tty: true
+        #    volumes:
+        #      - './services/client:/app'
+        #      - '/usr/src/app/services/client/node_modules'
+        #    environment:
+        #      BASE_URL: localhost:5001
+        #    command: npm run dev
+
+  db:
+    environment:
+      POSTGRES_USER: fastapi_serv
+      POSTGRES_PASSWORD: LGIKLKks87hk65T
+      POSTGRES_DB: fastapi_serv_db_debug
+    volumes:
+      - postgres_pgpool_dev:/var/lib/postgresql/data/
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - 5080:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@citizix.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecret
+    volumes:
+      - pgadmin_data:/home/rundeck/server/data
+
+volumes:
+  postgres_pgpool_dev:
+  pgadmin_data:
