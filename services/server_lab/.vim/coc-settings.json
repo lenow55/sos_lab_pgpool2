@@ -4,7 +4,7 @@
     //"python.formatting.autopep8Path": "/home/lenow/actual_project/apex_docker_fast_vite/services/server/.venv/bin/autopep8",
     "python.formatting.autopep8Args": [
         "--max-line-length",
-        "100",
+        "80",
         "--experimental"
     ]
 }
