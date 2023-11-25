@@ -6,7 +6,7 @@ from src.database.models import BaseConfig
 BaseConfigIn: type[PydanticModel] = pydantic_model_creator(
     BaseConfig,
     name="BaseConfigIn",
-    exclude=("author",),
+    exclude=("author","id"),
     exclude_readonly=True
 )
 
