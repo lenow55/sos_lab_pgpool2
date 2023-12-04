@@ -14,11 +14,11 @@ router = APIRouter()
 
 @router.post(
     "/config",
-    tags=["BaseConfigDTO"],
+    tags=["BaseConfigIn"],
     description="Отправить конфигурацию на предсказание",
-    response_model=BaseConfig,
+    response_model=BaseConfigIn,
     )
-async def create_config(config: BaseConfigDTO) -> BaseConfig:
+async def create_config(config: BaseConfigIn) -> BaseConfig:
     return ()
 
 
