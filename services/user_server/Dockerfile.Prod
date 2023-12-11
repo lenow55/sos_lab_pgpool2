@@ -19,6 +19,9 @@ FROM python:3.11-slim
 
 COPY --from=builder /app /app
 
+RUN mkdir -p /var/run/secrets_dir
+COPY ./secrets/debug_db_password /var/run/secrets_dir/db_password
+
 WORKDIR /app
 ENV PATH="${PATH}:/app/.venv/bin"
 
@@ -26,3 +29,7 @@ ENV PATH="${PATH}:/app/.venv/bin"
 #COPY migrations/ ./migrations
 
 COPY src/ ./src
+
+RUN mkdir environment
+
+COPY environment/*env.prod ./environment/

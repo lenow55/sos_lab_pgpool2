@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "server-lab"
-version = "0.0.2"
+name = "user_server"
+version = "0.0.1"
 description = ""
 authors = ["Новиков Илья <nov.ilucha@yandex.ru>"]
 readme = "README.md"

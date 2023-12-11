@@ -1,24 +1,23 @@
 version: '3'
 
 services:
-  server_lab:
-    container_name: server_lab
+  user_server:
+    container_name: user_server
     build:
-      context: ./services/server_lab
+      context: ./services/user_server
       dockerfile: Dockerfile.Prod
-    environment:
-      DATABASE_URL: postgres://fastapi_serv:LGIKLKks87hk65T@db:5432/fastapi_serv_db
-      ROOT_PATH: /api
-      BASE_URL: http://localhost:8090
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: fastapi_serv
-      DB_PASSWORD: LGIKLKks87hk65T
-      DB_NAME: fastapi_serv_db
+        #    environment:
+      #      DATABASE_URL: postgres://fastapi_serv:LGIKLKks87hk65T@db:5432/fastapi_serv_db
+      #      ROOT_PATH: /api
+      #      BASE_URL: http://localhost:8090
+      #      DB_HOST: db
+      #      DB_PORT: 5432
+      #      DB_USER: fastapi_serv
+      #      DB_PASSWORD: LGIKLKks87hk65T
+      #      DB_NAME: fastapi_serv_db
     expose:
       - 5001
-    command: sleep 3600
-      #command: uvicorn src.main:app --host 0.0.0.0 --port 5001
+    command: uvicorn src.main:app --host 0.0.0.0 --port 5001
     depends_on:
       - db
 

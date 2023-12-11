@@ -1,4 +1,4 @@
-import os
+from src.settings import dbSettings
 
 
 TORTOISE_ORM = {
@@ -6,11 +6,11 @@ TORTOISE_ORM = {
             "default": {
                 "engine": "tortoise.backends.asyncpg",
                 "credentials": {
-                    "host": os.environ.get("DB_HOST"),
-                    "port": os.environ.get("DB_PORT"),
-                    "user": os.environ.get("DB_USER"),
-                    "password": os.environ.get("DB_PASSWORD"),
-                    "database": os.environ.get("DB_NAME"),
+                    "host": dbSettings.db_host,
+                    "port": dbSettings.db_port,
+                    "user": dbSettings.db_user,
+                    "password": dbSettings.db_password.get_secret_value(),
+                    "database": dbSettings.db_name,
                     }
                 }
             },
