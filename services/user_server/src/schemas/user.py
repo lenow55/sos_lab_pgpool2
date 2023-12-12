@@ -1,6 +1,8 @@
-from typing import Annotated, ClassVar, Optional
+from typing import Annotated, ClassVar, Generic, List, Optional, TypeVar
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
-from schemas import PersistentDeletion, TimestampSchema, UUIDSchema
+from tortoise.contrib.pydantic.base import PydanticModel
+from tortoise.contrib.pydantic.creator import pydantic_model_creator
+from src.database import models
 
 
 class UserBase(BaseModel):
@@ -30,15 +32,23 @@ class UserBase(BaseModel):
     ]
 
 
-class User(
-        TimestampSchema, UserBase, UUIDSchema,
-        PersistentDeletion):
-    hashed_password: str
+User = pydantic_model_creator(
+    cls=models.User,
+    name="User",
+    exclude=("hashed_password",),
+    model_config=ConfigDict(
+        extra='forbid',
+    )
+)
 
-
-class UserRead(UserBase):
-    model_config: ClassVar[ConfigDict] = ConfigDict(
-        extra='forbid')
+UserRead = pydantic_model_creator(
+    cls=models.User,
+    name="UserRead",
+    include=("full_name", "username", "email"),
+    model_config=ConfigDict(
+        extra='forbid',
+    )
+)
 
 
 class UserCreate(UserBase):
@@ -52,10 +62,6 @@ class UserCreate(UserBase):
             examples=["Str1ngst!"]
         )
     ]
-
-
-class UserCreateInternal(UserBase):
-    hashed_password: str
 
 
 class UserUpdate(BaseModel):

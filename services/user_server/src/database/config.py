@@ -1,4 +1,4 @@
-from src.settings import dbSettings
+from src.core.settings import dbSettings
 
 
 TORTOISE_ORM = {
