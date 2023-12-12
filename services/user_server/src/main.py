@@ -11,7 +11,10 @@ from src.core.schemas import HealthCheck
 #from src.routes import base_config
 from src.api.v1 import router
 
-from src.core.logger import configureLogger
+import logging
+from src.core import logger as logger_mod
+logger = logging.getLogger(__name__)
+
 
 Tortoise.init_models(["src.database.models"], "models")
 
@@ -33,7 +36,3 @@ def test() -> HealthCheck:
 
 register_tortoise(app, config=TORTOISE_ORM, generate_schemas=False)
 
-
-import logging
-logger = logging.getLogger("")
-logger = configureLogger(logger)

@@ -1,4 +1,3 @@
-import logging
 from tortoise.contrib.pydantic.base import PydanticModel
 from src.api.paginated import ListResponse
 from src.exceptions.http_exceptions import DuplicateValueException, CustomException, NotFoundException
@@ -6,13 +5,14 @@ from tortoise.exceptions import DoesNotExist, IntegrityError
 from src.database.models import User
 import src.schemas.user as schemas
 from src.core.security import get_password_hash
-from src.core.logger import configureLogger
 import uuid as uuid_pkg
 
+import logging
+from src.core import logger as logger_mod
 logger = logging.getLogger(__name__)
-logger = configureLogger(logger)
-print(logger)
-print(logger.handlers)
+
+logger.debug("Debug Message")
+
 
 class UserService():
     async def create_user(self, user_in_obj: schemas.UserCreate) -> schemas.User:
@@ -70,13 +70,9 @@ class UserService():
     async def delete_user(self, user_id: uuid_pkg.UUID) -> schemas.User:
         try:
             db_user = await schemas.User.from_queryset_single(User.get(uuid=user_id))
-            #db_user = await User.get(uuid=user_id)
         except DoesNotExist:
             raise NotFoundException(
                 detail=f"User {user_id} not found")
-
-
-        logger.debug(db_user)
 
         if not isinstance(db_user, schemas.User):
             logger.error(

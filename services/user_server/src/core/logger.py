@@ -21,23 +21,22 @@ else:
 #db_client_logger.setLevel(LOGGING_LEVEL)
 
 
-def configureLogger(logger: logging.Logger):
-    level = LOGGING_LEVEL
-    fmt = logging.Formatter(
-        fmt="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",)
+level = LOGGING_LEVEL
+fmt = logging.Formatter(
+    fmt="%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",)
 
-    shell_handler = logging.StreamHandler(
-        sys.stdout)
-    shell_handler.setLevel(level)
-    shell_handler.setFormatter(fmt)
+shell_handler = logging.StreamHandler(
+    sys.stdout)
+shell_handler.setLevel(level)
+shell_handler.setFormatter(fmt)
 
-    file_handler = RotatingFileHandler(
-        LOG_FILE_PATH, maxBytes=10485760, backupCount=5)
-    file_handler.setLevel(level)
-    file_handler.setFormatter(fmt)
-    logger.setLevel(level)
-    logger.addHandler(file_handler)
-    logger.addHandler(shell_handler)
-    return logger
+file_handler = RotatingFileHandler(
+    LOG_FILE_PATH, maxBytes=10485760, backupCount=5)
+file_handler.setLevel(level)
+file_handler.setFormatter(fmt)
 
+logging.basicConfig(level=level,
+                    handlers=[shell_handler,file_handler])
+
+logger = logging.getLogger()
