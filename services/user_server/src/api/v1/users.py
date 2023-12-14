@@ -1,10 +1,10 @@
 import uuid as uuid_pkg
 from fastapi import APIRouter
-from fastapi.params import Query
+from src.core.security import get_password_hash
 from src.core.schemas import Status
 from src.exceptions.http_exceptions import DocumentCustomException
 from src.api.paginated import ListResponse, PaginatedListResponse, compute_offset
-from src.schemas.user import User, UserCreate, UserRead, UserUpdate
+from src.schemas.user import User, UserCreate, UserCreateInternal, UserRead, UserUpdate
 from src.crud.userService import userService
 
 router: APIRouter = APIRouter(tags=["Users"])
@@ -31,7 +31,8 @@ async def get_users(
     return PaginatedListResponse[User](
         data=users_data.data,
         total_count=users_data.total_count,
-        has_more=(page*items_per_page) < users_data.total_count,
+        has_more=(
+            page * items_per_page) < users_data.total_count,
         page=page,
         items_per_page=items_per_page)
 
@@ -41,7 +42,10 @@ async def get_users(
 async def write_user(
     user: UserCreate,
 ) -> User:
-    return await userService.create_user(user_in_obj=user)
+    user_internal_obj: UserCreateInternal = UserCreateInternal(
+            **user.model_dump(exclude=set("password")),
+            hashed_password=get_password_hash(user.password))
+    return await userService.create_user(user_in_obj=user_internal_obj)
 
 
 @router.patch("/user/{user_id}",

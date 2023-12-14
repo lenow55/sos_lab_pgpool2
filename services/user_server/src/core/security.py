@@ -2,6 +2,9 @@ import bcrypt
 from typing import Union, Literal, Dict, Any
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import ValidationError
+from src.core.schemas import TokenData
 from src.core.settings import tokenSettings
 from src.crud.userService import userService
 
@@ -18,6 +21,7 @@ def get_password_hash(password: str) -> bytes:
     return bcrypt.hashpw(
         password.encode(),
         bcrypt.gensalt())
+
 
 async def authenticate_user(username_or_email: str, password: str) -> Union[Dict[str, Any], Literal[False]]:
     if "@" in username_or_email:
@@ -53,7 +57,7 @@ async def create_refresh_token(data: dict[str, Any], expires_delta: timedelta | 
     encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-async def verify_token(token: str, db: AsyncSession) -> TokenData | None:
+async def verify_token(token: str) -> TokenData | None:
     """
     Verify a JWT token and return TokenData if valid.
 
@@ -69,16 +73,21 @@ async def verify_token(token: str, db: AsyncSession) -> TokenData | None:
     TokenData | None
         TokenData instance if the token is valid, None otherwise.
     """
-    is_blacklisted = await crud_token_blacklist.exists(db, token=token)
-    if is_blacklisted:
-        return None
+    #is_blacklisted = await crud_token_blacklist.exists(db, token=token)
+    #if is_blacklisted:
+    #    return None
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username_or_email: str = payload.get("sub")
-        if username_or_email is None:
+        payload = jwt.decode(
+                token,
+                tokenSettings.jwt_secret.get_secret_value(),
+                algorithms=[tokenSettings.jwt_algorithm])
+        token_dict = payload.get("data")
+        if not isinstance(token_dict, dict):
             return None
-        return TokenData(username_or_email=username_or_email)
+        return TokenData(**token_dict)
 
     except JWTError:
+        return None
+    except ValidationError:
         return None

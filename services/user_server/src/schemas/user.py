@@ -63,6 +63,11 @@ class UserCreate(UserBase):
         )
     ]
 
+class UserCreateInternal(UserBase):
+    model_config: ClassVar[ConfigDict] = ConfigDict(
+        extra='forbid')
+    hashed_password: bytes
+
 
 class UserUpdate(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(

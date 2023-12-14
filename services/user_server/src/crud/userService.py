@@ -1,4 +1,3 @@
-import json
 from tortoise.contrib.pydantic.base import PydanticModel
 from tortoise.query_utils import Prefetch
 from src.api.paginated import ListResponse
@@ -6,7 +5,6 @@ from src.exceptions.http_exceptions import DuplicateValueException, CustomExcept
 from tortoise.exceptions import DoesNotExist, IntegrityError
 from src.database.models import BaseConfig, User
 import src.schemas.user as schemas
-from src.core.security import get_password_hash
 import uuid as uuid_pkg
 
 import logging
@@ -18,14 +16,9 @@ logger.debug("Debug Message")
 
 
 class UserService():
-    async def create_user(self, user_in_obj: schemas.UserCreate) -> schemas.User:
-        user_internal_dict: dict = user_in_obj.model_dump()
-        user_internal_dict["hashed_password"] = get_password_hash(
-            password=user_internal_dict["password"])
-        del user_internal_dict["password"]
-        user_obj = None
+    async def create_user(self, user_in_obj: schemas.UserCreateInternal) -> schemas.User:
         try:
-            user_obj = await User.create(**user_internal_dict)
+            user_obj = await User.create(**user_in_obj.model_dump())
         except IntegrityError:
             raise DuplicateValueException()
 
@@ -45,9 +38,9 @@ class UserService():
                     Prefetch(
                         "base_config",
                         BaseConfig.filter(author_id=user_id)
-                        )
                     )
-            )#.only(*schemas.UserRead.model_fields.keys())
+                )
+            )  # .only(*schemas.UserRead.model_fields.keys())
         except DoesNotExist:
             raise NotFoundException(
                 detail=f"User {user_id} not found")
@@ -63,17 +56,13 @@ class UserService():
 
     async def find_user(self, **kwargs) -> schemas.UserRead:
         try:
-            db_user: PydanticModel | schemas.UserRead = await schemas.UserRead.from_queryset_single(
-                User().prefetch_related(
-                    Prefetch(
-                        "base_config",
-                        BaseConfig.filter(author_id=user_id)
-                        )
-                    )
-            )#.only(*schemas.UserRead.model_fields.keys())
+            db_user: PydanticModel | schemas.UserRead\
+                = await schemas.UserRead.from_queryset_single(
+                    User.get(kwargs=kwargs)
+                )
         except DoesNotExist:
             raise NotFoundException(
-                detail=f"User {user_id} not found")
+                detail=f"User {kwargs} not found")
 
         if isinstance(db_user, schemas.UserRead):
             return db_user
@@ -89,14 +78,14 @@ class UserService():
             offset: int = 0,
             limit: int = 100
     ) -> ListResponse[schemas.User]:
-#        users = await schemas.User.from_queryset(
-#            User.all().offset(offset).limit(limit).only(
-#                *schemas.User.model_fields.keys()
-#            )
-#        )
+        #        users = await schemas.User.from_queryset(
+        #            User.all().offset(offset).limit(limit).only(
+        #                *schemas.User.model_fields.keys()
+        #            )
+        #        )
         logger.debug(schemas.User.model_fields.keys())
         users = await schemas.User.from_queryset(
-                User.all().offset(offset).limit(limit)
+            User.all().offset(offset).limit(limit)
         )
         total_count: int = await User.all().count()
         return ListResponse(
@@ -129,7 +118,7 @@ class UserService():
         try:
             user: User = await User.get(uuid=user_id)
             logger.debug(
-                    f"Object to update {user_update_info.model_dump()}")
+                f"Object to update {user_update_info.model_dump()}")
             if len(user_update_info.model_fields_set) != 0:
                 user.update_from_dict(
                     user_update_info.model_dump(
