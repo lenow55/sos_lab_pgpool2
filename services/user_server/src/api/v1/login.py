@@ -1,20 +1,22 @@
+from typing import Annotated
 import uuid as uuid_pkg
-from fastapi import APIRouter
-from fastapi.params import Query
+from fastapi import APIRouter, Depends
 from src.core.schemas import Status
 from src.exceptions.http_exceptions import DocumentCustomException
-from src.api.paginated import ListResponse, PaginatedListResponse, compute_offset
-from src.schemas.user import User, UserCreate, UserRead, UserUpdate
-from src.crud.userService import userService
+from fastapi.security import OAuth2PasswordRequestForm
+from src.core.schemas import (
+        Token
+        )
 
-router: APIRouter = APIRouter(tags=["Users"])
+router: APIRouter = APIRouter(tags=["login"])
 
 
-@router.get("/user/{user_id}",
-            response_model=UserRead)
+@router.get("/login",
+            response_model=Token)
 async def get_user(
-        user_id: uuid_pkg.UUID
-) -> UserRead:
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+) -> Token:
+    form_data.username
     return await userService.get_user(user_id=user_id)
 
 

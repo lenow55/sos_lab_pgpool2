@@ -1,6 +1,5 @@
-from typing import Annotated, ClassVar, Generic, List, Optional, TypeVar
+from typing import Annotated, ClassVar, Optional
 from pydantic import BaseModel, ConfigDict, Field, EmailStr
-from tortoise.contrib.pydantic.base import PydanticModel
 from tortoise.contrib.pydantic.creator import pydantic_model_creator
 from src.database import models
 
@@ -35,7 +34,7 @@ class UserBase(BaseModel):
 User = pydantic_model_creator(
     cls=models.User,
     name="User",
-    exclude=("hashed_password",),
+    exclude=("hashed_password","base_config"),
     model_config=ConfigDict(
         extra='forbid',
     )
@@ -44,7 +43,8 @@ User = pydantic_model_creator(
 UserRead = pydantic_model_creator(
     cls=models.User,
     name="UserRead",
-    include=("full_name", "username", "email"),
+    include=("full_name", "username", "email", "base_config"),
+    exclude=("base_config.uuid",),
     model_config=ConfigDict(
         extra='forbid',
     )

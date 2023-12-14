@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from .users import router as users_router
+from .base_configs import router as base_config_router
 #from .login import router as login_router
 #from .logout import router as logout_router
 #from .posts import router as posts_router
@@ -10,6 +11,7 @@ from .users import router as users_router
 
 router: APIRouter = APIRouter(prefix="/v1")
 router.include_router(router=users_router)
+router.include_router(router=base_config_router)
 #router.include_router(login_router)
 #router.include_router(logout_router)
 #router.include_router(posts_router)

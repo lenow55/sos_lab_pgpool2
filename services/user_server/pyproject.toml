@@ -6,7 +6,7 @@ authors = ["Новиков Илья <nov.ilucha@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.10"
 fastapi = "^0.104.0"
 uvicorn = "^0.23.2"
 pydantic = {extras = ["email"], version = "^2.4.2"}
@@ -18,6 +18,9 @@ passlib = "^1.7.4"
 pydantic-core = "^2.14.5"
 bcrypt = "^4.1.1"
 orjson = "^3.9.10"
+cryptography = "^41.0.7"
+fastapi-jwt = "^0.2.0"
+python-jose = "^3.3.0"
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^2.0.4"

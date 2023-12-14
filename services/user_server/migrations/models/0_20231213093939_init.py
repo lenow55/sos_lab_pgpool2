@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS "user" (
     "create_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "update_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP,
     "is_deleted" BOOL NOT NULL  DEFAULT False,
-    "deleted_at" TIMESTAMPTZ NOT NULL
+    "deleted_at" TIMESTAMPTZ NOT NULL  DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS "idx_user_usernam_018265" ON "user" ("username", "is_deleted", "email");
 CREATE TABLE IF NOT EXISTS "baseconfig" (

@@ -1,5 +1,5 @@
 from tortoise import fields, models
-from tortoise.fields import CASCADE, SET_NULL, ForeignKeyRelation
+from tortoise.fields import CASCADE, SET_NULL, ForeignKeyNullableRelation
 
 
 class User(models.Model):
@@ -14,6 +14,7 @@ class User(models.Model):
     )
     hashed_password = fields.BinaryField(
         null=False)
+    base_config = fields.ReverseRelation["BaseConfig"]
 
     create_at = fields.DatetimeField(
         auto_now_add=True)
@@ -23,8 +24,7 @@ class User(models.Model):
     is_deleted = fields.BooleanField(
         default=False)
     deleted_at = fields.DatetimeField(
-        auto_now=True
-    )
+        auto_now=True)
 
     class Meta(models.Model.Meta):
         indexes: tuple = ("username", "is_deleted", "email")
@@ -33,7 +33,7 @@ class SuperUser(models.Model):
     id = fields.IntField(pk=True)
     uuid_super_user = fields.ForeignKeyField(
         "models.User",
-        related_name="uuid_super_user",
+        related_name=False,
         null=False,
         on_delete=CASCADE
     )
@@ -47,9 +47,9 @@ class BaseConfig(models.Model):
     base_in_cache = fields.BooleanField()
     query_cache = fields.BooleanField()
     pgpool_enabled = fields.BooleanField()
-    author: ForeignKeyRelation | None = fields.ForeignKeyField(
+    author: ForeignKeyNullableRelation = fields.ForeignKeyField(
         "models.User",
-        related_name="config",
+        related_name="base_config",
         null=True,
         on_delete=SET_NULL)
     create_date = fields.DatetimeField(
@@ -60,7 +60,7 @@ class BaseConfig(models.Model):
     class Meta(models.Model.Meta):
         # Define the default ordering
         #  the pydantic serialiser will use this to order the results
-        ordering = ["id"]
+        ordering = ["uuid"]
 
 
 class ModelConfig(models.Model):
