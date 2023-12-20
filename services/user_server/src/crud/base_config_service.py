@@ -1,4 +1,3 @@
-import json
 from tortoise.contrib.pydantic.base import PydanticModel
 from src.api.paginated import ListResponse
 from src.exceptions.http_exceptions import DuplicateValueException, CustomException, NotFoundException, UnauthorizedException

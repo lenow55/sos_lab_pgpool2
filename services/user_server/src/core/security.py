@@ -1,14 +1,18 @@
 import bcrypt
-from typing import Union, Literal, Dict, Any
+from typing import Any
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
+from tortoise.exceptions import DoesNotExist
+from exceptions.http_exceptions import NotFoundException
+from src.database.models import User
 from src.core.schemas import TokenData
 from src.core.settings import tokenSettings
-from src.crud.userService import userService
+from src.schemas.user import UserRead
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/api/v1/login")
 
 
 async def verify_password(plain_password: str, hashed_password: bytes) -> bool:
@@ -23,19 +27,25 @@ def get_password_hash(password: str) -> bytes:
         bcrypt.gensalt())
 
 
-async def authenticate_user(username_or_email: str, password: str) -> Union[Dict[str, Any], Literal[False]]:
+async def authenticate_user(username_or_email: str, password: str) -> UserRead:
     if "@" in username_or_email:
-        db_user: dict | None = await userService.get(email=username_or_email, is_deleted=False)
+        try:
+            db_user: User = await User.get(email=username_or_email, is_deleted=False)
+        except DoesNotExist:
+            raise NotFoundException(
+                detail=f"User with email {username_or_email} not found")
     else:
-        db_user = await crud_users.get(db=db, username=username_or_email, is_deleted=False)
+        try:
+            db_user: User = await User.get(username=username_or_email, is_deleted=False)
+        except DoesNotExist:
+            raise NotFoundException(
+                detail=f"User with username {username_or_email} not found")
 
-    if not db_user:
+    if not await verify_password(password, db_user.hashed_password):
         return False
 
-    elif not await verify_password(password, db_user["hashed_password"]):
-        return False
+    return await UserRead.from_tortoise_orm(db_user)
 
-    return db_user
 
 async def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
@@ -44,18 +54,25 @@ async def create_access_token(data: dict[str, Any], expires_delta: timedelta | N
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(
+        to_encode,
+        tokenSettings.jwt_secret.get_secret_value(),
+        algorithm=tokenSettings.jwt_algorithm)
     return encoded_jwt
+
 
 async def create_refresh_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.utcnow() + tokenSettings.refresh_token_ttl
     to_encode.update({"exp": expire})
-    encoded_jwt: str = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt: str = jwt.encode(
+        to_encode, tokenSettings.jwt_secret.get_secret_value(),
+        algorithm=tokenSettings.jwt_algorithm)
     return encoded_jwt
+
 
 async def verify_token(token: str) -> TokenData | None:
     """
@@ -73,15 +90,15 @@ async def verify_token(token: str) -> TokenData | None:
     TokenData | None
         TokenData instance if the token is valid, None otherwise.
     """
-    #is_blacklisted = await crud_token_blacklist.exists(db, token=token)
-    #if is_blacklisted:
+    # is_blacklisted = await crud_token_blacklist.exists(db, token=token)
+    # if is_blacklisted:
     #    return None
 
     try:
         payload = jwt.decode(
-                token,
-                tokenSettings.jwt_secret.get_secret_value(),
-                algorithms=[tokenSettings.jwt_algorithm])
+            token,
+            tokenSettings.jwt_secret.get_secret_value(),
+            algorithms=[tokenSettings.jwt_algorithm])
         token_dict = payload.get("data")
         if not isinstance(token_dict, dict):
             return None
