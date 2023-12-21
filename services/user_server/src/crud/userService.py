@@ -78,12 +78,6 @@ class UserService():
             offset: int = 0,
             limit: int = 100
     ) -> ListResponse[schemas.User]:
-        #        users = await schemas.User.from_queryset(
-        #            User.all().offset(offset).limit(limit).only(
-        #                *schemas.User.model_fields.keys()
-        #            )
-        #        )
-        logger.debug(schemas.User.model_fields.keys())
         users = await schemas.User.from_queryset(
             User.all().offset(offset).limit(limit)
         )

@@ -1,8 +1,9 @@
 from datetime import timedelta
 from enum import Enum
+from functools import cached_property
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, computed_field
 
 base_dir = "environment"
 
@@ -33,6 +34,13 @@ class ServerSettings(AdvancedBaseSettings):
             os.path.join(base_dir, 'server.env.debug')
         )
     )
+    @computed_field
+    @cached_property
+    def secure(self) -> bool:
+        if self.environment== EnvironmentOption.PRODUCTION:
+            return True
+        return False
+
 
 
 class ServiceDatabaseSettings(AdvancedBaseSettings):

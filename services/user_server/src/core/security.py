@@ -5,11 +5,10 @@ from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
-from exceptions.http_exceptions import NotFoundException
+from exceptions.http_exceptions import NotFoundException, UnauthorizedException
 from src.database.models import User
 from src.core.schemas import TokenData
 from src.core.settings import tokenSettings
-from src.schemas.user import UserRead
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/api/v1/login")
@@ -27,7 +26,7 @@ def get_password_hash(password: str) -> bytes:
         bcrypt.gensalt())
 
 
-async def authenticate_user(username_or_email: str, password: str) -> UserRead:
+async def authenticate_user(username_or_email: str, password: str) -> User:
     if "@" in username_or_email:
         try:
             db_user: User = await User.get(email=username_or_email, is_deleted=False)
@@ -42,9 +41,10 @@ async def authenticate_user(username_or_email: str, password: str) -> UserRead:
                 detail=f"User with username {username_or_email} not found")
 
     if not await verify_password(password, db_user.hashed_password):
-        return False
+        raise UnauthorizedException(
+            "Wrong username, email or password.")
 
-    return await UserRead.from_tortoise_orm(db_user)
+    return db_user
 
 
 async def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
@@ -52,7 +52,7 @@ async def create_access_token(data: dict[str, Any], expires_delta: timedelta | N
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
+        expire = datetime.utcnow() + tokenSettings.access_token_ttl
     to_encode.update({"exp": expire})
     encoded_jwt: str = jwt.encode(
         to_encode,

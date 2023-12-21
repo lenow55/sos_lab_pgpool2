@@ -26,6 +26,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     user_id: uuid.UUID
     token_type: TokenType
+    exp: datetime
     username: Optional[str] = None
 
 
