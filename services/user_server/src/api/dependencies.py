@@ -5,7 +5,7 @@ from fastapi import (
 )
 from tortoise.exceptions import DoesNotExist
 
-from src.schemas.user import UserRead
+from src.schemas.user import User
 from src.core.security import oauth2_scheme
 from src.core.security import verify_token
 
@@ -23,7 +23,8 @@ logger = logging.getLogger(__name__)
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)]
-) -> UserRead:
+) -> User:
+    logger.debug(token)
     token_data: TokenData | None = await verify_token(token)
     if token_data is None:
         raise UnauthorizedException(

@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 import uuid
 
 class HealthCheck(BaseModel):
@@ -19,15 +19,19 @@ class TokenType(Enum):
     REFRESH = "refresh"
 
 class Token(BaseModel):
-    token: str
+    access_token: str
     token_type: str
 
 
 class TokenData(BaseModel):
     user_id: uuid.UUID
-    token_type: TokenType
-    exp: datetime
+    token_type: Optional[TokenType]
+    exp: Optional[datetime]
     username: Optional[str] = None
+
+    @field_serializer('exp')
+    def serialize_dt(self, exp: datetime, _info):
+        return int(exp.timestamp())
 
 
 class TokenBlacklistBase(BaseModel):

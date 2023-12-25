@@ -1,10 +1,13 @@
+from typing import Annotated
 import uuid as uuid_pkg
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from src.api.dependencies import get_current_user
 from src.schemas.base_config import BaseConfigOnly, BaseConfigRead
 from src.core.schemas import Status
 from src.exceptions.http_exceptions import DocumentCustomException
 from src.api.paginated import ListResponse, PaginatedListResponse, compute_offset
 from src.schemas.base_config import BaseConfig, BaseConfigCreate, BaseConfigUpdate
+from src.schemas.user import User
 from src.crud.base_config_service import baseConfigService
 
 router: APIRouter = APIRouter(tags=["BaseConfigs"])
@@ -39,11 +42,11 @@ async def get_base_configs(
 @router.post("/base_config",
              response_model=BaseConfig)
 async def write_base_config(
-        user_id: uuid_pkg.UUID,
-        base_config: BaseConfigCreate) -> BaseConfig:
+        base_config: BaseConfigCreate,
+        current_user: Annotated[User, Depends(get_current_user)]) -> BaseConfig:
     return await baseConfigService.create_base_config(
         obj=base_config,
-        current_user_id=user_id)
+        current_user_id=current_user.uuid)
 
 
 @router.patch("/base_config/{id}",

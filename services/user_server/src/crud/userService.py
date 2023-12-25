@@ -12,9 +12,6 @@ from src.core import logger as logger_mod
 from src.core.schemas import Status
 logger = logging.getLogger(__name__)
 
-logger.debug("Debug Message")
-
-
 class UserService():
     async def create_user(self, user_in_obj: schemas.UserCreateInternal) -> schemas.User:
         try:
@@ -54,17 +51,18 @@ class UserService():
             raise CustomException(
                 detail="Bad user instance")
 
-    async def find_user(self, **kwargs) -> schemas.UserRead:
+    async def find_user(self, **kwargs) -> schemas.User:
         try:
-            db_user: PydanticModel | schemas.UserRead\
-                = await schemas.UserRead.from_queryset_single(
-                    User.get(kwargs=kwargs)
+            logger.debug(kwargs)
+            db_user: PydanticModel | schemas.User\
+                = await schemas.User.from_queryset_single(
+                    User.get(**kwargs)
                 )
         except DoesNotExist:
             raise NotFoundException(
                 detail=f"User {kwargs} not found")
 
-        if isinstance(db_user, schemas.UserRead):
+        if isinstance(db_user, schemas.User):
             return db_user
         else:
             logger.error(

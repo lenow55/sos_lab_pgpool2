@@ -5,13 +5,17 @@ from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
-from exceptions.http_exceptions import NotFoundException, UnauthorizedException
+from src.exceptions.http_exceptions import NotFoundException, UnauthorizedException
 from src.database.models import User
-from src.core.schemas import TokenData
-from src.core.settings import tokenSettings
+from src.core.schemas import TokenData, TokenType
+from src.core.settings import tokenSettings, serverSettings
+
+import logging
+from src.core import logger as logger_mod
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/login")
+    tokenUrl=serverSettings.root_path+"v1/auth/login")
 
 
 async def verify_password(plain_password: str, hashed_password: bytes) -> bool:
@@ -27,6 +31,7 @@ def get_password_hash(password: str) -> bytes:
 
 
 async def authenticate_user(username_or_email: str, password: str) -> User:
+    logger.debug(username_or_email)
     if "@" in username_or_email:
         try:
             db_user: User = await User.get(email=username_or_email, is_deleted=False)
@@ -47,34 +52,37 @@ async def authenticate_user(username_or_email: str, password: str) -> User:
     return db_user
 
 
-async def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
-    to_encode = data.copy()
+async def create_access_token(data: TokenData, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + tokenSettings.access_token_ttl
-    to_encode.update({"exp": expire})
+    logger.debug(datetime.utcnow())
+    data.exp=expire
+    data.token_type = TokenType.ACCESS
+    logger.debug(data.model_dump_json())
     encoded_jwt: str = jwt.encode(
-        to_encode,
+        data.model_dump(mode='json'),
         tokenSettings.jwt_secret.get_secret_value(),
         algorithm=tokenSettings.jwt_algorithm)
     return encoded_jwt
 
 
-async def create_refresh_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
-    to_encode = data.copy()
+async def create_refresh_token(data: TokenData, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + tokenSettings.refresh_token_ttl
-    to_encode.update({"exp": expire})
+    data.exp=expire
+    data.token_type = TokenType.REFRESH
     encoded_jwt: str = jwt.encode(
-        to_encode, tokenSettings.jwt_secret.get_secret_value(),
+        data.model_dump(mode='json'),
+        tokenSettings.jwt_secret.get_secret_value(),
         algorithm=tokenSettings.jwt_algorithm)
     return encoded_jwt
 
 
-async def verify_token(token: str) -> TokenData | None:
+async def verify_token(token: str) -> TokenData:
     """
     Verify a JWT token and return TokenData if valid.
 
@@ -87,24 +95,29 @@ async def verify_token(token: str) -> TokenData | None:
 
     Returns
     -------
-    TokenData | None
-        TokenData instance if the token is valid, None otherwise.
+    TokenData
+        TokenData instance if the token is valid
+
+    Raises
+    -------
+    UnauthorizedException
+        It token or payload not valid
     """
     # is_blacklisted = await crud_token_blacklist.exists(db, token=token)
     # if is_blacklisted:
     #    return None
 
     try:
-        payload = jwt.decode(
+
+        logger.debug(token)
+        token_data: TokenData = TokenData(**jwt.decode(
             token,
             tokenSettings.jwt_secret.get_secret_value(),
-            algorithms=[tokenSettings.jwt_algorithm])
-        token_dict = payload.get("data")
-        if not isinstance(token_dict, dict):
-            return None
-        return TokenData(**token_dict)
+            algorithms=[tokenSettings.jwt_algorithm]))
+        return token_data
 
-    except JWTError:
-        return None
-    except ValidationError:
-        return None
+    except JWTError as e:
+        logger.error(e)
+        raise UnauthorizedException("Invalid token.")
+    except ValidationError as e:
+        raise UnauthorizedException(f"Invalid token payload {e.json()}")
