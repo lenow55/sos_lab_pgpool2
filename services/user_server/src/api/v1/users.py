@@ -7,6 +7,10 @@ from src.api.paginated import ListResponse, PaginatedListResponse, compute_offse
 from src.schemas.user import User, UserCreate, UserCreateInternal, UserRead, UserUpdate
 from src.crud.userService import userService
 
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from docx import Document
+
 router: APIRouter = APIRouter(tags=["Users"])
 
 
@@ -43,8 +47,8 @@ async def write_user(
     user: UserCreate,
 ) -> User:
     user_internal_obj: UserCreateInternal = UserCreateInternal(
-            **user.model_dump(exclude=set("password")),
-            hashed_password=get_password_hash(user.password))
+        **user.model_dump(exclude=set("password")),
+        hashed_password=get_password_hash(user.password))
     return await userService.create_user(user_in_obj=user_internal_obj)
 
 
@@ -65,3 +69,17 @@ async def delete_user(
     user_id: uuid_pkg.UUID
 ) -> Status:
     return await userService.delete_user(user_id=user_id)
+
+
+@router.get("/user/{user_id}/report")
+async def get_user(
+        user_id: uuid_pkg.UUID
+) -> StreamingResponse:
+    doc_content:bytes = await userService.generate_report(user_id)
+    return StreamingResponse(
+        BytesIO(doc_content),
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition":
+            f"attachment;filename={user_id}_report.docx"}
+    )
