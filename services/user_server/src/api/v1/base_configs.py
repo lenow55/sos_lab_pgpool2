@@ -54,10 +54,10 @@ async def write_base_config(
               response_model=BaseConfigOnly)
 async def update_base_config(
         id: uuid_pkg.UUID,
-        user_id: uuid_pkg.UUID,
+        current_user: Annotated[User, Depends(get_current_user)],
         base_config_info: BaseConfigUpdate) -> BaseConfigOnly:
     return await baseConfigService.update_base_config(
-        id=id, user_id=user_id, obj_update_info=base_config_info)
+        id=id, user_id=current_user.uuid, obj_update_info=base_config_info)
 
 
 @router.delete(
@@ -65,5 +65,5 @@ async def update_base_config(
     responses={404: {"model": DocumentCustomException}})
 async def delete_base_config(
     id: uuid_pkg.UUID,
-    user_id: uuid_pkg.UUID) -> Status:
-    return await baseConfigService.delete_base_config(id=id, user_id=user_id)
+    current_user: Annotated[User, Depends(get_current_user)]) -> Status:
+    return await baseConfigService.delete_base_config(id=id, user_id=current_user.uuid)
