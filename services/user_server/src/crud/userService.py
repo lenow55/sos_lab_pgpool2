@@ -269,8 +269,7 @@ class UserService():
         for item in items:
             instrumenst_info.add_run('\n• ' + item["name"])
             hiperlink = instrumenst_info.add_run(
-                item
-                ["url"])
+                ' ' + item["url"])
             hiperlink.font.color.rgb = RGBColor(
                 0, 0, 255)  # Задаем цвет текста
         instrumenst_info.paragraph_format.space_after = Pt(
