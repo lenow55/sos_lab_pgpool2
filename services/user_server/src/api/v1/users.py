@@ -47,7 +47,7 @@ async def write_user(
     user: UserCreate,
 ) -> User:
     user_internal_obj: UserCreateInternal = UserCreateInternal(
-        **user.model_dump(exclude=set("password")),
+        **user.model_dump(exclude={'password'}),
         hashed_password=get_password_hash(user.password))
     return await userService.create_user(user_in_obj=user_internal_obj)
 
@@ -72,7 +72,7 @@ async def delete_user(
 
 
 @router.get("/user/{user_id}/report")
-async def get_user(
+async def get_user_report(
         user_id: uuid_pkg.UUID
 ) -> StreamingResponse:
     doc_content:bytes = await userService.generate_report(user_id)
