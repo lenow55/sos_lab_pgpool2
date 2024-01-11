@@ -1,7 +1,7 @@
 from typing import Set, Any
 
-from aioredis import Redis
-import aioredis
+from redis.asyncio import Redis
+from redis import asyncio as aioredis
 
 from src.core.cache import ABCCacheBackend
 
@@ -19,8 +19,14 @@ class RedisBackend(ABCCacheBackend):
         """Get Value from Key"""
         return await self.redis_connection.get(key)
 
-    async def set(self, key: str|bytes, value, expire: int = 0, pexpire: int = 0, exists=False):
+    async def get_delete(self, key: str | bytes):
+        """Get Value from Key"""
+        return await self.redis_connection.getdel(key)
+
+    async def set(self, key: str|bytes, value, expire: int | None = None, pexpire: int | None = None, exists=False):
         """Set Key to Value"""
+        if expire and pexpire:
+            return await self.redis_connection.set(key, value, px=pexpire, xx=exists)
         return await self.redis_connection.set(key, value, ex=expire, px=pexpire, xx=exists)
 
     async def pttl(self, key: str) -> int:

@@ -1,8 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
-from api.dependencies import get_refresh_session_manager
-from core.sessions.refresh_session import RefreshSession
+from src.api.dependencies import get_refresh_session_manager
+from src.core.sessions.refresh_session import RefreshSession
 
 from src.database.models import User
 from src.exceptions.http_exceptions import UnauthorizedException
@@ -57,7 +57,7 @@ async def refresh_access_token(
         request=request,
         response=response)
 
-    user_exist: bool = await User.exists(user_id=token_data.user_id, is_deleted=False)
+    user_exist: bool = await User.exists(uuid=token_data.user_id, is_deleted=False)
     if user_exist == False:
         response = await refresh_session.delete_refresh_session(
             request=request,
