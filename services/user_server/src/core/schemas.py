@@ -44,9 +44,6 @@ class TokenBlacklistBase(BaseModel):
     token: str
     expires_at: datetime
 
-def orjson_dumps(v, *, default):
-    # orjson.dumps returns bytes, to match standard json.dumps we need to decode
-    return orjson.dumps(v, default=default).decode()
 
 class RefreshSessionData(BaseModel):
     user_id: uuid.UUID
@@ -56,7 +53,3 @@ class RefreshSessionData(BaseModel):
     ip: Optional[str] = None
     expires_at: int
     created_at: datetime
-
-    class Config:
-        json_loads = orjson.loads
-        json_dumps = orjson_dumps
