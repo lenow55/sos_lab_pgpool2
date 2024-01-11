@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from tortoise.exceptions import DoesNotExist
 from src.exceptions.http_exceptions import NotFoundException, UnauthorizedException
 from src.database.models import User
-from src.core.schemas import TokenData, TokenType
+from src.core.schemas import AccessData, TokenType
 from src.core.settings import tokenSettings, serverSettings
 
 import logging
@@ -52,15 +52,13 @@ async def authenticate_user(username_or_email: str, password: str) -> User:
     return db_user
 
 
-async def create_access_token(data: TokenData, expires_delta: timedelta | None = None) -> str:
+async def create_access_token(data: AccessData, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + tokenSettings.access_token_ttl
-    logger.debug(datetime.utcnow())
     data.exp=expire
     data.token_type = TokenType.ACCESS
-    logger.debug(data.model_dump_json())
     encoded_jwt: str = jwt.encode(
         data.model_dump(mode='json'),
         tokenSettings.jwt_secret.get_secret_value(),
@@ -68,7 +66,7 @@ async def create_access_token(data: TokenData, expires_delta: timedelta | None =
     return encoded_jwt
 
 
-async def create_refresh_token(data: TokenData, expires_delta: timedelta | None = None) -> str:
+async def create_refresh_token(data: AccessData, expires_delta: timedelta | None = None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
@@ -82,9 +80,9 @@ async def create_refresh_token(data: TokenData, expires_delta: timedelta | None 
     return encoded_jwt
 
 
-async def verify_token(token: str) -> TokenData:
+async def verify_access_token(token: str) -> AccessData:
     """
-    Verify a JWT token and return TokenData if valid.
+    Verify a JWT access token and return AccessData if valid.
 
     Parameters
     ----------
@@ -95,22 +93,18 @@ async def verify_token(token: str) -> TokenData:
 
     Returns
     -------
-    TokenData
-        TokenData instance if the token is valid
+    AccessData
+        AccessData instance if the token is valid
 
     Raises
     -------
     UnauthorizedException
         It token or payload not valid
     """
-    # is_blacklisted = await crud_token_blacklist.exists(db, token=token)
-    # if is_blacklisted:
-    #    return None
-
     try:
 
         logger.debug(token)
-        token_data: TokenData = TokenData(**jwt.decode(
+        token_data: AccessData = AccessData(**jwt.decode(
             token,
             tokenSettings.jwt_secret.get_secret_value(),
             algorithms=[tokenSettings.jwt_algorithm]))
@@ -118,6 +112,6 @@ async def verify_token(token: str) -> TokenData:
 
     except JWTError as e:
         logger.error(e)
-        raise UnauthorizedException("Invalid token.")
+        raise UnauthorizedException("Invalid access token.")
     except ValidationError as e:
-        raise UnauthorizedException(f"Invalid token payload {e.json()}")
+        raise UnauthorizedException(f"Invalid access token payload {e.json()}")
