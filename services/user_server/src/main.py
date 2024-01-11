@@ -7,6 +7,7 @@ from src.database.register import register_tortoise
 from src.database.config import TORTOISE_ORM
 
 from src.core.schemas import HealthCheck
+from src.core.setup import register_redis
 
 
 import logging
@@ -20,7 +21,8 @@ Tortoise.init_models(["src.database.models"], "models")
 from src.api.v1 import router
 
 app = FastAPI(
-        description="Effective PP2",
+        title="Effective PP2",
+        description="Сервис для работы с конфигурациями базы данных",
         version="0.0.2",
         root_path=serverSettings.root_path)
 
@@ -35,4 +37,5 @@ def test() -> HealthCheck:
 
 
 register_tortoise(app, config=TORTOISE_ORM, generate_schemas=False)
+register_redis(app)
 

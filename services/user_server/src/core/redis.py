@@ -10,7 +10,7 @@ class RedisBackend(ABCCacheBackend):
     redis_connection: Redis
 
     @staticmethod
-    async def init(url: str) -> "RedisBackend":
+    def init(url: str) -> "RedisBackend":
         redis = RedisBackend()
         redis.redis_connection = aioredis.from_url(url=url)
         return redis
