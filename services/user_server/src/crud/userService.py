@@ -92,6 +92,10 @@ class UserService():
             raise CustomException(
                 detail="Bad user instance")
 
+    async def check_user(self, **kwargs) -> bool:
+        flag: bool = await User.exists(**kwargs)
+        return flag
+
     async def get_multi_users(
             self,
             offset: int = 0,

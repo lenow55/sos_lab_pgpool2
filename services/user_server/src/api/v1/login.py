@@ -1,20 +1,19 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
+from api.dependencies import get_refresh_session_manager
+from core.sessions.refresh_session import RefreshSession
 
 from src.database.models import User
 from src.exceptions.http_exceptions import UnauthorizedException
 from src.core.security import (
     authenticate_user,
     create_access_token,
-    create_refresh_token,
-    verify_access_token
 )
 from src.core.schemas import (
     AccessData,
     Token,
 )
-from src.core.settings import tokenSettings, serverSettings
 
 router: APIRouter = APIRouter(tags=["auth"], prefix="/auth")
 
@@ -23,7 +22,8 @@ router: APIRouter = APIRouter(tags=["auth"], prefix="/auth")
              response_model=Token)
 async def login(
         response: Response,
-        form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        refresh_session: Annotated[RefreshSession, Depends(get_refresh_session_manager)]
 ) -> Token:
     user: User = await authenticate_user(
         username_or_email=form_data.username,
@@ -31,26 +31,14 @@ async def login(
     )
 
     token_data: AccessData = AccessData(
-            user_id=user.uuid,
-            token_type=None,
-            username=user.username, exp=None)
+        user_id=user.uuid,
+        token_type=None,
+        username=user.username, exp=None)
     access_token = await create_access_token(
         data=token_data)
 
-    refresh_token = await create_refresh_token(
-        data=token_data
-    )
-
-    max_age: float = tokenSettings.refresh_token_ttl.total_seconds()
-    response.set_cookie(
-        key="refresh_token",
-        value=refresh_token,
-        httponly=True,
-        secure=serverSettings.secure,
-        path=f"{serverSettings.root_path}v1/auth",
-        samesite='lax',
-        max_age=int(max_age)
-    )
+    await refresh_session.create_refresh_session(
+        data=token_data, response=response)
 
     return Token(
         access_token=access_token,
@@ -61,30 +49,25 @@ async def login(
 @router.post("/refresh")
 async def refresh_access_token(
     request: Request,
-    response: Response
+    response: Response,
+    refresh_session: Annotated[RefreshSession, Depends(get_refresh_session_manager)]
 ) -> Token:
-    refresh_token = request.cookies.get("refresh_token")
-    if not refresh_token:
-        raise UnauthorizedException(
-            "Refresh token missing.")
 
-    token_data: AccessData = await verify_access_token(refresh_token)
+    token_data: AccessData = await refresh_session.update_refresh_session(
+        request=request,
+        response=response)
+
+    user_exist: bool = await User.exists(user_id=token_data.user_id, is_deleted=False)
+    if user_exist == False:
+        response = await refresh_session.delete_refresh_session(
+            request=request,
+            response=response)
+        headers = {"set-cookie": response.headers["set-cookie"]}
+        raise UnauthorizedException("User not found", headers=headers)
 
     new_access_token: str = await create_access_token(
         data=token_data)
-    new_refresh_token: str = await create_refresh_token(
-        data=token_data)
 
-    max_age: float = tokenSettings.refresh_token_ttl.total_seconds()
-    response.set_cookie(
-        key="refresh_token",
-        value=new_refresh_token,
-        httponly=True,
-        secure=serverSettings.secure,
-        path=f"{serverSettings.root_path}v1/auth",
-        samesite='lax',
-        max_age=int(max_age)
-    )
     return Token(
         access_token=new_access_token,
         token_type="bearer"

@@ -5,6 +5,12 @@ from fastapi import (
 )
 from tortoise.exceptions import DoesNotExist
 
+from core.sessions import refresh_session
+from core.sessions.refresh_session import RefreshSession, refreshSessionManager
+from core import redis
+from core.redis import RedisBackend
+from src.core.settings import redisSeggings, tokenSettings, serverSettings
+
 from src.schemas.user import User
 from src.core.security import oauth2_scheme
 from src.core.security import verify_access_token
@@ -37,3 +43,19 @@ async def get_current_user(
     except DoesNotExist:
         raise UnauthorizedException(
             detail=f"User with username {token_data.username} not found")
+
+def get_refresh_session_manager() -> RefreshSession:
+    if isinstance(
+            refresh_session.refreshSessionManager, RefreshSession):
+        return refresh_session.refreshSessionManager
+
+    if not isinstance(redis.redisBackend, RedisBackend):
+        redis.redisBackend = RedisBackend.init(redisSeggings.redis_cache_url)
+        logger.warn("Init redis from session")
+    refresh_session.refreshSessionManager = RefreshSession(
+        redisBackend=redis.redisBackend,
+        model=AccessData,
+        path=f"{serverSettings.root_path}v1/auth",
+        token_ttl=tokenSettings.refresh_token_ttl
+    )
+    return refresh_session.refreshSessionManager
