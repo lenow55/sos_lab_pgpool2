@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Annotated
+from typing import Annotated, Dict
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -16,10 +16,11 @@ class CustomException(HTTPException):
             self,
             status_code:
             int = status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail: str | None | dict = None):
+            detail: str | None | dict = None,
+            headers: Dict[str,str]|None = None):
         if not detail:
             detail = HTTPStatus(status_code).description
-        super().__init__(status_code=status_code, detail=detail)
+        super().__init__(status_code=status_code, detail=detail, headers=headers)
 
 
 class BadRequestException(CustomException):
@@ -44,10 +45,10 @@ class ForbiddenException(CustomException):
 
 
 class UnauthorizedException(CustomException):
-    def __init__(self, detail: str | None | dict = None):
+    def __init__(self, detail: str | None | dict = None, headers: Dict[str,str]|None = None):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=detail)
+            detail=detail, headers=headers)
 
 
 class UnprocessableEntityException(CustomException):
