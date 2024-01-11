@@ -5,10 +5,10 @@ from fastapi import (
 )
 from tortoise.exceptions import DoesNotExist
 
-from core.sessions import refresh_session
-from core.sessions.refresh_session import RefreshSession, refreshSessionManager
-from core import redis
-from core.redis import RedisBackend
+from src.core.sessions import refresh_session
+from src.core.sessions.refresh_session import RefreshSession, refreshSessionManager
+from src.core import redis
+from src.core.redis import RedisBackend
 from src.core.settings import redisSeggings, tokenSettings, serverSettings
 
 from src.schemas.user import User

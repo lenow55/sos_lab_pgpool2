@@ -6,9 +6,9 @@ from uuid import UUID, uuid4
 from jose import jwt, JWTError
 from jose.exceptions import ExpiredSignatureError
 from pydantic import ValidationError
-from exceptions.http_exceptions import UnauthorizedException
+from src.exceptions.http_exceptions import UnauthorizedException
 
-from src.core.redis import RedisBackend, redisBackend
+from src.core.redis import RedisBackend
 from src.core.schemas import RefreshData, RefreshSessionData, AccessData, TokenType
 from src.core.settings import tokenSettings, serverSettings
 
@@ -95,8 +95,9 @@ class RefreshSession:
             samesite='lax',
             max_age=self.session_expire
         )
+        logger.debug(data.model_dump_json())
         await self.redisBackend.set(
-            key=data.refresh_id.bytes,
+            key=str(data.refresh_id),
             value=data.model_dump_json(),
             expire=data.expires_at
         )
@@ -133,9 +134,9 @@ class RefreshSession:
             self.key_name)
         refresh_data: RefreshData = self._verify_refresh_token(
             refresh_token=old_refresh_token)
-        store_result: Any = await self.redisBackend.get(
-            refresh_data.refresh_id.bytes)
-        if not isinstance(store_result, str):
+        store_result: Any = await self.redisBackend.get_delete(
+            str(refresh_data.refresh_id))
+        if not isinstance(store_result, str|bytes|bytearray):
             raise UnauthorizedException(
                 f"Refresh session lost")
         try:

@@ -49,6 +49,9 @@ services:
     volumes:
       - pgadmin_data:/home/rundeck/server/data
 
+  redis:
+    command: redis-server --save 30 1 --loglevel debug
+
 volumes:
   postgres_pgpool_dev:
   pgadmin_data:
