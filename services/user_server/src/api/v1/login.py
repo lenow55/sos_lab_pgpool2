@@ -8,11 +8,11 @@ from src.core.security import (
     authenticate_user,
     create_access_token,
     create_refresh_token,
-    verify_token
+    verify_access_token
 )
 from src.core.schemas import (
+    AccessData,
     Token,
-    TokenData,
 )
 from src.core.settings import tokenSettings, serverSettings
 
@@ -30,7 +30,7 @@ async def login(
         password=form_data.password
     )
 
-    token_data: TokenData = TokenData(
+    token_data: AccessData = AccessData(
             user_id=user.uuid,
             token_type=None,
             username=user.username, exp=None)
@@ -68,7 +68,7 @@ async def refresh_access_token(
         raise UnauthorizedException(
             "Refresh token missing.")
 
-    token_data: TokenData = await verify_token(refresh_token)
+    token_data: AccessData = await verify_access_token(refresh_token)
 
     new_access_token: str = await create_access_token(
         data=token_data)

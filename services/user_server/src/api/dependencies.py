@@ -7,12 +7,12 @@ from tortoise.exceptions import DoesNotExist
 
 from src.schemas.user import User
 from src.core.security import oauth2_scheme
-from src.core.security import verify_token
+from src.core.security import verify_access_token
 
 from src.exceptions.http_exceptions import (
     UnauthorizedException,
 )
-from src.core.schemas import TokenData
+from src.core.schemas import AccessData
 from src.crud.userService import userService
 
 import logging
@@ -25,7 +25,7 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)]
 ) -> User:
     logger.debug(token)
-    token_data: TokenData | None = await verify_token(token)
+    token_data: AccessData | None = await verify_access_token(token)
     if token_data is None:
         raise UnauthorizedException(
             "User not authenticated.")
