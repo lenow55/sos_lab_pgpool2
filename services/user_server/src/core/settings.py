@@ -99,5 +99,6 @@ class RedisCacheSettings(AdvancedBaseSettings):
 dbSettings = ServiceDatabaseSettings()
 serverSettings = ServerSettings()
 tokenSettings = TokenSettings()
+redisSeggings = RedisCacheSettings()
 
 # tokenSettings = AcessTokenSettings()
