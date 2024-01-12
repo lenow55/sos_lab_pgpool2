@@ -24,6 +24,7 @@ class DetectModel:
     def preprocessor(message):
         dict_values: dict = json.loads(message)
         params = list(dict_values.values())
+        print(params)
         return params
 
     def predict(self, message):
@@ -34,4 +35,4 @@ class DetectModel:
         params = self.preprocessor(message)
         label = self.model.predict([params])[0]
         spam_prob = self.model.predict_proba([params])
-        return {"label": int(label), "usefull_probability": int(spam_prob[0][1])}
+        return {"label": int(label), "usefull_probability": float(spam_prob[0][1])}
