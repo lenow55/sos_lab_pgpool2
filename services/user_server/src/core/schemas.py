@@ -53,3 +53,21 @@ class RefreshSessionData(BaseModel):
     ip: Optional[str] = None
     expires_at: int
     created_at: datetime
+
+class TaskOut(BaseModel):
+    id: uuid.UUID
+
+class TaskIn(BaseModel):
+    cost: int
+    percent_write: int
+    count_connections: int
+    cache_enabled: bool
+    base_in_cache: bool
+
+    @field_serializer('cache_enabled')
+    def serialize_qcache(self, cache_enabled: bool, _info) -> int:
+        return int(cache_enabled)
+
+    @field_serializer('base_in_cache')
+    def serialize_cache(self, base_in_cache: bool, _info) -> int:
+        return int(base_in_cache)
