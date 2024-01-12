@@ -13,6 +13,16 @@ services:
       - db
       - redis
 
+  ml_server:
+    container_name: ml_server
+    build:
+      context: ./services/ml_server
+      dockerfile: Dockerfile.Prod
+        #    expose:
+        #      - 5001
+    command: celery --app src.main:app worker --pool=solo -n ml-worker --loglevel=debug --without-mingle --queues=ml_service
+    depends_on:
+      - redis
         #  client:
         #    container_name: client_apex
         #    build:
