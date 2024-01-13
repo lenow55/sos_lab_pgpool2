@@ -1,44 +1,13 @@
 version: '3'
 
 services:
-  user_server:
-    container_name: user_server
-    build:
-      context: ./services/user_server
-      dockerfile: Dockerfile.Prod
-        #    environment:
-      #      DATABASE_URL: postgres://fastapi_serv:LGIKLKks87hk65T@db:5432/fastapi_serv_db
-      #      ROOT_PATH: /api
-      #      BASE_URL: http://localhost:8090
-      #      DB_HOST: db
-      #      DB_PORT: 5432
-      #      DB_USER: fastapi_serv
-      #      DB_PASSWORD: LGIKLKks87hk65T
-      #      DB_NAME: fastapi_serv_db
-    expose:
-      - 5001
-    command: uvicorn src.main:app --host 0.0.0.0 --port 5001
-    depends_on:
-      - db
-
-        #  client:
-        #    container_name: client_apex
-        #    build:
-        #      context: ./services/client
-        #      dockerfile: Dockerfile.Prod
-        #    ports:
-        #      - 8090:8090
-        #    command: nginx
-        #    environment:
-        #      BASE_URL: /api
-        #    depends_on:
-        #      - server
-
   db:
     container_name: sos_database_pg
     image: postgres:16-alpine
-    expose:
-      - 5432
+      #expose:
+      #  - 5432
+    networks:
+      - internal
     environment:
       POSTGRES_USER: fastapi_serv
       POSTGRES_PASSWORD: LGIKLKks87hk65T
@@ -46,5 +15,78 @@ services:
     volumes:
       - postgres_pgpool:/var/lib/postgresql/data/
 
+  user_server:
+    container_name: user_server
+    build:
+      context: ./services/user_server
+      dockerfile: Dockerfile.Prod
+        #expose:
+        #  - 5001
+    command: uvicorn src.main:app --host 0.0.0.0 --port 5001
+    depends_on:
+      - db
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      # The Traefik Network
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.user_server.rule=Host(`soslab.lenowmain.ru`) &&
+             PathPrefix(`/api`)"
+      # The 'websecure' entryPoint is basically your HTTPS entrypoint. Check the next code snippet if you are encountering problems only; you probably have a working traefik configuration if this is not your first container you are reverse proxying.
+      - "traefik.http.routers.user_server.entrypoints=websecure"
+      - "traefik.http.routers.user_server.service=user_server"
+      - "traefik.http.services.user_server.loadbalancer.server.port=5001"
+      - "traefik.http.routers.user_server.tls=true"
+      # Replace the string 'letsencrypt' with your own certificate resolver
+      - "traefik.http.routers.user_server.tls.certresolver=myresolver"
+      - "traefik.http.routers.user_server.tls.domains[0].main=lenowmain.ru"
+      - "traefik.http.routers.user_server.tls.domains[0].sans=soslab.lenowmain.ru"
+      - "traefik.http.routers.user_server.middlewares=user_server-mw-strip"
+      - "traefik.http.middlewares.user_server-mw-strip.stripprefix.prefixes=/api"
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4:latest
+      #ports:
+      #  - 5080:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@citizix.com
+      - PGADMIN_DEFAULT_PASSWORD=SuperSecretStrong887sjd
+    volumes:
+      - pgadmin_data:/home/rundeck/server/data
+    networks:
+      - traefik
+      - internal
+    labels:
+      - "traefik.enable=true"
+      # The Traefik Network
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.pgadmin.rule=Host(`soslab.lenowmain.ru`) &&
+             PathPrefix(`/pgadmin`)"
+      # The 'websecure' entryPoint is basically your HTTPS entrypoint. Check the next code snippet if you are encountering problems only; you probably have a working traefik configuration if this is not your first container you are reverse proxying.
+      - "traefik.http.routers.pgadmin.entrypoints=websecure"
+      - "traefik.http.routers.pgadmin.service=pgadmin"
+      - "traefik.http.services.pgadmin.loadbalancer.server.port=80"
+      - "traefik.http.routers.pgadmin.tls=true"
+      # Replace the string 'letsencrypt' with your own certificate resolver
+      - "traefik.http.routers.pgadmin.tls.certresolver=myresolver"
+      - "traefik.http.routers.pgadmin.tls.domains[0].main=lenowmain.ru"
+      - "traefik.http.routers.pgadmin.tls.domains[0].sans=soslab.lenowmain.ru"
+      - "traefik.http.routers.pgadmin.middlewares=pgadmin-mw-strip,path-header"
+      - "traefik.http.middlewares.pgadmin-mw-strip.stripprefix.prefixes=/pgadmin"
+      - "traefik.http.middlewares.path-header.headers.customrequestheaders.X-Script-Name=/pgadmin"
+      - "traefik.http.middlewares.path-header.headers.customresponseheaders.X-Script-Name=/pgadmin"
+
+
+networks:
+  traefik:
+    external: true
+  internal:
+    name: internal
+
+
 volumes:
   postgres_pgpool:
+  pgadmin_data:
