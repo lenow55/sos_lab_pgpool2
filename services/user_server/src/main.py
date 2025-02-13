@@ -17,6 +17,7 @@ from celery.result import AsyncResult
 
 import logging
 from src.core import logger as logger_mod
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,8 +34,7 @@ celery_app.conf.task_routes = {
         "queue": "ml_service",
     },
 }
-celery_app.conf.broker_transport_options = {
-    "visibility_timeout": 36000}  # 1h
+celery_app.conf.broker_transport_options = {"visibility_timeout": 36000}  # 1h
 
 
 Tortoise.init_models(["src.database.models"], "models")
@@ -45,25 +45,22 @@ app = FastAPI(
     title="Effective PP2",
     description="Сервис для работы с конфигурациями базы данных",
     version="0.0.2",
-    root_path=serverSettings.root_path)
+    root_path=serverSettings.root_path,
+)
 
 app.include_router(router)
 
 
-@app.get("/", tags=["HealthCheck"],
-         response_model=HealthCheck)
+@app.get("/", tags=["HealthCheck"], response_model=HealthCheck)
 def test() -> HealthCheck:
-    return HealthCheck(
-        name=app.title,
-        version=app.version,
-        description=app.description)
+    return HealthCheck(name=app.title, version=app.version, description=app.description)
 
 
 @app.post("/task", tags=["Task"], response_model=TaskOut)
 def task(config: TaskIn) -> TaskOut:
     add_task_signature: Signature = celery_app.signature(
-        'src.main.detect_spam',
-        kwargs={"msg": config.model_dump_json()})
+        "src.main.detect_spam", kwargs={"msg": config.model_dump_json()}
+    )
     result: AsyncResult = add_task_signature.apply_async()
     return TaskOut(id=result.id)
 
@@ -71,10 +68,11 @@ def task(config: TaskIn) -> TaskOut:
 @app.get("/task/{id}", tags=["Task"])
 def get_task(id: str) -> PlainTextResponse:
     result: AsyncResult = AsyncResult(id=id, app=celery_app)
-    return PlainTextResponse(f"task id = {result.id} \n\
-status: {result.status}\nresult {result.result}")
+    return PlainTextResponse(
+        f"task id = {result.id} \n\
+status: {result.status}\nresult {result.result}"
+    )
 
 
-register_tortoise(app, config=TORTOISE_ORM,
-                  generate_schemas=False)
+register_tortoise(app, config=TORTOISE_ORM, generate_schemas=False)
 register_redis(app)
